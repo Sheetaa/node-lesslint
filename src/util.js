@@ -9,6 +9,8 @@ import {glob, log, util as edpUtil, path as edpPath} from 'edp-core';
 
 'use strict';
 
+const WHITESPACE = /^[\s\xa0\u3000]+|[\u3000\xa0\s]+$/g;
+
 /**
  * 调用给定的迭代函数 n 次,每一次传递 index 参数，调用迭代函数。
  * from underscore
@@ -263,3 +265,17 @@ export function changeColorByStartAndEndIndex(source, startIndex = 0, endIndex =
 //         colorMessage: colorMessage
 //     });
 // }
+
+/**
+ * 删除目标字符串两端的空白字符
+ *
+ * @param {string} source 目标字符串
+ * @return {string} 删除两端空白字符后的字符串
+ */
+export function trim(source) {
+    if (!source) {
+        return '';
+    }
+
+    return String(source).replace(WHITESPACE, '');
+}

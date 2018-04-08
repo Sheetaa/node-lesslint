@@ -98,7 +98,7 @@ describe('util test suite\n', () => {
                 '!**/{output,node_modules,asset,dist,release,doc,dep,report,*.bak}/**'
             ];
             const candidates1 = util.getCandidates([], patterns1);
-            expect(candidates1.length).to.equal(17);
+            expect(candidates1.length).to.equal(18);
 
             process.chdir(__dirname);
             const patterns2 = [

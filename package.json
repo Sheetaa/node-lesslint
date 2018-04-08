@@ -1,7 +1,7 @@
 {
   "name": "lesslint",
   "description": "lint your less code",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "maintainers": [
     {
       "name": "ielgnaw",
@@ -14,6 +14,7 @@
     "js-yaml": "^3.6.1",
     "less": "^2.7.1",
     "manis": "^0.3.0",
+    "object-assign": "^4.1.1",
     "postcss": "^5.2.0",
     "postcss-less": "^0.14.0",
     "postcss-values-parser": "^0.1.7",

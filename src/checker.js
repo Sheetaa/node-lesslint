@@ -8,8 +8,9 @@ import {existsSync} from 'fs';
 import chalk from 'chalk';
 import postcssLess from 'postcss-less';
 import postcss from 'postcss';
+import objectAssign from 'object-assign';
 
-import {isIgnored} from './util';
+import {isIgnored, trim} from './util';
 import {loadConfig} from './config';
 
 'use strict';
@@ -20,17 +21,128 @@ import {loadConfig} from './config';
 const ruleDir = join(__dirname, './rule');
 
 /**
+ * 检测的默认配置
+ *
+ * @const
+ * @type {Object}
+ */
+const DEFAULT_CONFIG = objectAssign({}, loadConfig('.', true));
+
+/**
+ * 匹配行内 lesslint key: value, ... 的正则
+ *
+ * @const
+ * @type {RegExp}
+ */
+const INLINE_PATTERN = /\/\*+\s*\blesslint[^-disable]\b\s*(.*)\s*\*\//gmi;
+
+/**
+ * 分析行内注释
+ *
+ * @param {string} fileContent 当前检测的文件内容
+ * @param {Object} rcConfig 当前检测的文件的检测规则
+ *
+ * @return {Object} inline Rule
+ */
+const analyzeInlineRule = (fileContent, rcConfig) => {
+    const ret = {};
+    let inlineObj = null;
+    let match = null;
+
+    /* jshint loopfunc:true */
+    /* eslint-disable no-extra-boolean-cast, no-loop-func */
+    while (!!(match = INLINE_PATTERN.exec(fileContent))) {
+        const matchRules = match[1];
+        let jsonStr = matchRules.replace(/([^,]*)(?=:)/g, word => {
+            if (word) {
+                word = word.replace(/\s/g, '');
+                return '"' + word + '"';
+            }
+            return '';
+        });
+        jsonStr = '{' + jsonStr + '}';
+
+        try {
+            inlineObj = JSON.parse(jsonStr);
+        }
+        catch (e) {}
+
+        if (inlineObj) {
+            /* eslint-disable fecs-use-for-of */
+            for (const p in inlineObj) {
+                if (rcConfig.hasOwnProperty(p)) {
+                    ret[p] = inlineObj[p];
+                }
+            }
+            /* eslint-enable fecs-use-for-of */
+        }
+    }
+    /* eslint-enable no-extra-boolean-cast, no-loop-func */
+    return ret;
+};
+
+/**
+ * 匹配行内 lesslint-disable xxx, yyy, zzz 的正则
+ *
+ * @const
+ * @type {RegExp}
+ */
+const INLINE_DISABLE_PATTERN = /\/\*+\s*\blesslint\-disable\b\s*([^\*\/]*)\s*\*\//gmi;
+
+/**
+ * 分析行内 disable 注释
+ *
+ * @param {string} fileContent 当前检测的文件内容
+ * @param {Object} rcConfig 当前检测的文件的检测规则
+ *
+ * @return {Object} inline Rule
+ */
+const analyzeInlineDisableRule = (fileContent, rcConfig) => {
+    const ret = {};
+    let match = null;
+    /* eslint-disable no-extra-boolean-cast */
+    while (!!(match = INLINE_DISABLE_PATTERN.exec(fileContent))) {
+        const matchedRules = match[1];
+        if (matchedRules) {
+            const simpleMatchedRules = matchedRules.split(/[^a-z-]/gmi);
+            for (let i = 0, len = simpleMatchedRules.length; i < len; i++) {
+                simpleMatchedRules[i] && (ret[trim(simpleMatchedRules[i])] = false);
+            }
+        }
+        else {
+            /* eslint-disable fecs-use-for-of */
+            for (const p in rcConfig) {
+                if (rcConfig.hasOwnProperty(p)) {
+                    ret[p] = false;
+                }
+            }
+            /* eslint-enable fecs-use-for-of */
+        }
+    }
+    /* eslint-enable no-extra-boolean-cast */
+    return ret;
+};
+
+/**
  * 检测 css 文件内容
  *
  * @param {string} fileContent 文件内容
  * @param {string} filePath 文件路径，根据这个参数来设置 less 编译时的 paths
- * @param {Object=} realConfig 检测规则的配置，可选
+ * @param {Object=} rcConfig 检测规则的配置，可选
  *
  * @return {Promise} Promise 对象
  */
-export function checkString(fileContent, filePath, realConfig) {
+export function checkString(fileContent, filePath, rcConfig = DEFAULT_CONFIG) {
     // 这里把文件内容的 \r\n 统一替换成 \n，便于之后获取行号
     fileContent = fileContent.replace(/\r\n?/g, '\n');
+
+    // 行内注释改变规则配置
+    const inline = analyzeInlineRule(fileContent, rcConfig);
+
+    // 行内注释取消规则配置
+    const inlineDisable = analyzeInlineDisableRule(fileContent, rcConfig);
+
+    const realConfig = objectAssign({}, rcConfig, inline, inlineDisable);
 
     // postcss 插件集合即规则检测的文件集合
     const plugins = [];

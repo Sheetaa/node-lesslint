@@ -36,6 +36,25 @@ describe('checker test suite\n', () => {
                 expect(messages[0].ruleName).to.equal('CssSyntaxError');
             });
         });
+
+        it('should return right result for inline-disable', () => {
+            const filePath = 'path/to/file.css';
+            const fileContent = '/* lesslint-disable: zero-unit */\np {\nheight: 0px;\n}\n';
+
+            return checker.checkString(fileContent, filePath).then(invalidList => {
+                expect(invalidList.length).to.equal(1);
+                expect(invalidList[0].messages[0].ruleName).to.not.equal('zero-unit');
+            });
+        });
+
+        it('should return right result for inline-disable all rules', () => {
+            const filePath = 'path/to/file.css';
+            const fileContent = '/* lesslint-disable */\np {\nheight: 0px;\n}\n';
+
+            return checker.checkString(fileContent, filePath).then(invalidList => {
+                expect(invalidList.length).to.equal(0);
+            });
+        });
     });
 
     describe('check: \n', () => {

@@ -8,8 +8,11 @@
 import chalk from 'chalk';
 import postcss from 'postcss';
 import {getLineContent} from '../util';
+import {getPrefixList} from '../prefixes';
 
 'use strict';
+
+const prefixList = getPrefixList();
 
 /**
  * 规则名称
@@ -40,6 +43,26 @@ const getMsg = (curIndent, neededIndent) => ''
     + '` but saw `'
     + (curIndent)
     + '`';
+
+/**
+ * 判断是否是合法的带前缀的 css 属性名称
+ *
+ * @param {Object} decl postcss 节点对象
+ *
+ * @return {boolean} 结果
+ */
+const isValidVendorProp = decl => {
+    const prop = decl.prop;
+    const standardProperty = prop.replace(/^\-(webkit|moz|ms|o)\-/g, '');
+    // 标准模式在 prefixList 中，那么如果 propertyName 不在 prefixList 中
+    // 即这个属性用错了，例如 -o-animation
+    if (prefixList.indexOf(standardProperty) > -1) {
+        if (prefixList.indexOf(prop) <= -1) {
+            return false;
+        }
+    }
+    return true;
+};
 
 /**
  * 添加报错信息
@@ -102,6 +125,14 @@ const ruleListIterator = (ruleList, result) => {
             indentStr += '    ';
             rule.nodes.forEach(childNode => {
                 if (childNode.type !== 'decl') {
+                    return;
+                }
+
+                if (!isValidVendorProp(childNode)) {
+                    return;
+                }
+
+                if (prefixList.indexOf(childNode.prop) > -1) {
                     return;
                 }
 

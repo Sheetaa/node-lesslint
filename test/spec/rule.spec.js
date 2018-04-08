@@ -282,5 +282,31 @@ describe('rule test suite\n', () => {
             });
         });
     });
+
+    describe('vendor-prefixes-sort', () => {
+        const filePath = path.join(__dirname, '../fixture/vendor-prefixes-sort.less');
+        const fileContent = fs
+            .readFileSync(filePath, 'utf8')
+            .replace(/\r\n?/g, '\n');
+
+        const file = {
+            path: filePath,
+            content: fileContent
+        };
+
+        it('should return right message', () => {
+            const errors = [];
+            return checker.check(file, errors, () => {}).then(() => {
+                expect(errors[0].messages[0].message).to.equal(''
+                    + '`       -webkit-box-sizing: border-box;` Property with private prefix should be '
+                    + 'according to the colon position alignment'
+                );
+                expect(errors[0].messages[1].message).to.equal(''
+                    + '`       -webkit-box-sizing: border-box;` Property with private prefix from long to short arrangement'
+                );
+                expect(errors[0].messages.length).to.equal(2);
+            });
+        });
+    });
 });
 /* eslint-enable max-nested-callbacks */

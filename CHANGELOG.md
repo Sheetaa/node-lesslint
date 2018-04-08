@@ -1,6 +1,10 @@
 CHANGELOG
 ===
 
+#### 2018.4.8
+1. 添加了`vendor-prefixes-sort`规则检查。
+2. 支持`lesslint-disable`。
+
 #### 2016.10.27
 
 1. 修复了一些 bug。

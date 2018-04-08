@@ -39,6 +39,10 @@ export const check = postcss.plugin(RULENAME, opts =>
                 return;
             }
 
+            if (/lesslint-(disable|enable)/.test(comment.text)) {
+                return;
+            }
+
             const {source} = comment;
 
             const startLine = source.start.line;
